@@ -91,6 +91,13 @@ class KiwiApiClient:
             "Authorization": self.api_key,
             "Content-Type": "application/json"
         }
+        # check if output_file_path is valid if provided
+        if output_file_path:
+            if not os.path.exists(output_file_path):
+                return {"status": "error", "message": "Invalid output file path"}
+        # if file path not end of /, add /
+        if not output_file_path.endswith('/'):
+            output_file_path = output_file_path + '/'
         response = requests.get(url, headers=headers, params=params)
         if response.status_code == 200:
             # Get filename from Content-Disposition header if available
@@ -102,7 +109,7 @@ class KiwiApiClient:
             
             # default to save as working directory, if output_file_path provided, save to provided path
             file_path = os.path.join(output_file_path, filename) if output_file_path else filename
-            
+
             with open(file_path, 'wb') as file:
                 file.write(response.content)
             return {"status": "success", "message": f"File downloaded to {file_path}"}
