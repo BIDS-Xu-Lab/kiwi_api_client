@@ -1,18 +1,10 @@
-import time
 import requests
 import os
-from dotenv import load_dotenv
-
-load_dotenv()
-
-ROOT_PATH = os.getenv("ROOT_PATH")
-API_KEY = os.getenv("API_KEY")
-
 
 class KiwiApiClient:
-    def __init__(self):
-        self.api_key = "Bearer " + API_KEY
-        self.base_url = ROOT_PATH
+    def __init__(self, api_key):
+        self.api_key = "Bearer " + api_key
+        self.base_url = "https://kiwi-test.chpk8s.ynhh.org/src"
 
     def get_api_key(self):
         return self.api_key
@@ -21,7 +13,7 @@ class KiwiApiClient:
         return self.base_url
     
     def key_info(self):
-        url = self.base_url + "/api_key_info/"
+        url = self.base_url + "/api_key_info"
         headers = {
             "Authorization": self.api_key,
             "Content-Type": "application/json"
@@ -30,7 +22,7 @@ class KiwiApiClient:
         return response.json()
     
     def single_prediction(self, input_data):
-        url = self.base_url + "/single_predict/"
+        url = self.base_url + "/single_predict"
         params = {
             "text": input_data
         }
@@ -42,7 +34,7 @@ class KiwiApiClient:
         return response.json()
     
     def batch_prediction(self, file_path):
-        url = self.base_url + "/batch_process/"
+        url = self.base_url + "/batch_process"
         headers = {
             "Authorization": self.api_key,
             "accept": "application/json"
@@ -57,7 +49,7 @@ class KiwiApiClient:
         return response.json()
     
     def task_status(self, task_id):
-        url = self.base_url + "/task_status/"
+        url = self.base_url + "/task_status"
         params = {
             "task_id": task_id
         }
@@ -69,7 +61,7 @@ class KiwiApiClient:
         return response.json()
     
     def incomplete_tasks(self):
-        url = self.base_url + "/incomplete_tasks/"
+        url = self.base_url + "/incomplete_tasks"
         headers = {
             "Authorization": self.api_key,
             "Content-Type": "application/json"
@@ -78,7 +70,7 @@ class KiwiApiClient:
         return response.json()
     
     def cancel_task(self, task_id):
-        url = self.base_url + "/cancel_task/"
+        url = self.base_url + "/cancel_task"
         params = {
             "task_id": task_id
         }
@@ -90,7 +82,7 @@ class KiwiApiClient:
         return response.json()
     
     def download_task(self, task_id, output_file_path=None, type="zip"):
-        url = self.base_url + "/download/"
+        url = self.base_url + "/download"
         params = {
             "task_id": task_id,
             "type": type
@@ -108,8 +100,8 @@ class KiwiApiClient:
             else:
                 filename = f"task_{task_id}.{type}"
             
-            # Use provided output path or default filename
-            file_path = output_file_path or filename
+            # default to save as working directory, if output_file_path provided, save to provided path
+            file_path = os.path.join(output_file_path, filename) if output_file_path else filename
             
             with open(file_path, 'wb') as file:
                 file.write(response.content)
@@ -117,23 +109,3 @@ class KiwiApiClient:
         else:
             return {"status": "error", "message": "Failed to download file"}
 
-class KiwiApiPrediction:
-    def __init__(self):
-        self.KiwiApiClient = KiwiApiClient()
-        
-    def batch_prediction(self, input_data, output_file_path=None, type="json"):
-        # first make a task
-        task = self.KiwiApiClient.batch_prediction(input_data)
-        print(f"Task created successfully, status: {task['message']}, task_id: {task['task_id']}, token remaining: {task['token_remaining']}, estimated time: {task['estimate_time']}")
-        task_id = task["task_id"]
-        # wait for the task to complete
-        while True:
-            task_status = self.KiwiApiClient.task_status(task_id)
-            if task_status["status"] == "completed":
-                break
-            else:
-                print(f"Task is not completed yet, status: {task_status['status']}, files remaining: {task_status.get('files_remaining', 'N/A')}, processed files: {task_status.get('processed_files', 'N/A')}, remaining time: {task_status.get('remaining_time', 'N/A')}")
-                time.sleep(5)
-        # download the task
-        self.KiwiApiClient.download_task(task_id, output_file_path, type)
-        return {"status": "success", "message": f"Task completed successfully, file downloaded to {output_file_path}"}
