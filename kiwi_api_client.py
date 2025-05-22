@@ -4,7 +4,7 @@ import os
 class KiwiApiClient:
     def __init__(self, api_key):
         self.api_key = "Bearer " + api_key
-        self.base_url = "https://kiwi-test.chpk8s.ynhh.org/src"
+        self.base_url = "https://kiwi.chpk8s.ynhh.org/src"
 
     def get_api_key(self):
         return self.api_key
